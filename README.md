@@ -211,61 +211,355 @@ http://localhost:5173
 - Request custom items from vendors
 - Centralized order tracking
 
-## Screenshots
+## System Architecture
 
-### Home Page
-![Home Page - Hero section with feature highlights](./screenshots/01-home.png)
+The Event Management System (EventCraft) is built using a client-side React application with state management using React Hooks and Context API.
 
-### User Login
-![User Login - Multi-role authentication](./screenshots/02-login.png)
+### Application Architecture Diagram
 
-### Vendor Browse
-![Vendor Browse - Filter by category (Catering, Florist, Decoration, Lighting)](./screenshots/03-vendors.png)
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    EventCraft Front-End                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              React Application (App.jsx)             │   │
+│  │  - Route Management                                  │   │
+│  │  - Provider for Store Context                        │   │
+│  │  - Global Toast Notifications                        │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                          ▲                                    │
+│                          │                                    │
+│        ┌─────────────────┼─────────────────┐                │
+│        │                 │                  │                │
+│   ┌────▼────┐      ┌────▼────┐      ┌────▼────┐            │
+│   │   User  │      │ Vendor  │      │ Admin   │            │
+│   │  Pages  │      │  Pages  │      │  Pages  │            │
+│   └────┬────┘      └────┬────┘      └────┬────┘            │
+│        │                 │                │                  │
+│        └─────────────────┼────────────────┘                 │
+│                          │                                    │
+│        ┌─────────────────▼────────────────┐                 │
+│        │  Shared Components & UI Layer    │                 │
+│        │ - Navbar                         │                 │
+│        │ - Toast                          │                 │
+│        │ - Cards, Forms, Tables           │                 │
+│        │ - Buttons, Badges                │                 │
+│        └─────────────────┬────────────────┘                 │
+│                          │                                    │
+│        ┌─────────────────▼────────────────┐                 │
+│        │      useStore() Hook             │                 │
+│        │  (Context + State Management)    │                 │
+│        │ - Authentication                 │                 │
+│        │ - Cart Operations                │                 │
+│        │ - Order Management               │                 │
+│        │ - Vendor Management              │                 │
+│        │ - Admin Functions                │                 │
+│        └─────────────────┬────────────────┘                 │
+│                          │                                    │
+│        ┌─────────────────▼────────────────┐                 │
+│        │   Global State (INITIAL)         │                 │
+│        │ - users[]                        │                 │
+│        │ - vendors[]                      │                 │
+│        │ - orders[]                       │                 │
+│        │ - cart[]                         │                 │
+│        │ - session                        │                 │
+│        │ - requests[]                     │                 │
+│        │ - memberships[]                  │                 │
+│        └──────────────────────────────────┘                 │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### Product Listing
-![Product Listing - View vendor products with prices](./screenshots/04-products.png)
+## Component Hierarchy
 
-### Shopping Cart
-![Shopping Cart - Cart management with item summary](./screenshots/05-cart.png)
+```
+App
+├── Navbar
+│   ├── Home (no session)
+│   ├── Login Links (no session)
+│   └── Authenticated Nav (with session)
+│       ├── User Nav
+│       ├── Vendor Nav
+│       └── Admin Nav
+┌──────────────────────────────────────────────────────────┐
+│ Page Component (switches based on route)                 │
+├──────────────────────────────────────────────────────────┤
+│                                                           │
+├─ Public Pages                                            │
+│  ├── HomePage                                            │
+│  ├── AdminLogin                                          │
+│  ├── VendorLogin                                         │
+│  ├── VendorSignup                                        │
+│  ├── UserLogin                                           │
+│  └── UserSignup                                          │
+│                                                           │
+├─ User Pages                                              │
+│  ├── UserPortal (dashboard)                              │
+│  ├── VendorBrowse (with category filter)                │
+│  ├── Products (vendor details + items)                   │
+│  ├── Cart (shopping cart overview)                       │
+│  ├── Checkout (3-step process)                           │
+│  ├── SuccessPage (order confirmation)                    │
+│  ├── OrderStatus (order tracking)                        │
+│  ├── GuestList (guest management)                        │
+│  └── RequestItem (custom requests)                       │
+│                                                           │
+├─ Vendor Pages                                            │
+│  ├── VendorHome (dashboard)                              │
+│  ├── YourItems (product listing)                         │
+│  ├── AddItem (product creation)                          │
+│  ├── Transactions (order history)                        │
+│  ├── ProductStatus (order fulfillment)                   │
+│  └── RequestItem (view requests)                         │
+│                                                           │
+└─ Admin Pages                                             │
+   ├── AdminDash (dashboard)                               │
+   ├── MaintainUser (user management)                      │
+   ├── MaintainVendor (vendor management)                  │
+   ├── Membership (membership plans)                       │
+   └── AllOrders (order overview)                          │
+                                                            │
+└── Toast (notifications)
+```
 
-### Checkout Process
-![Checkout Step 1 - Enter delivery details](./screenshots/06-checkout-1.png)
-![Checkout Step 2 - Review order summary](./screenshots/07-checkout-2.png)
-![Checkout Step 3 - Confirm and pay](./screenshots/08-checkout-3.png)
+## State Management Flow
 
-### Order Confirmation
-![Order Success - Confirmation with order ID and details](./screenshots/09-success.png)
+### useStore Hook Structure
 
-### Order Tracking
-![Order Status - Track orders from received to delivery](./screenshots/10-orders.png)
+```javascript
+const store = useStore();
 
-### Guest List Management
-![Guest List - Add guests with RSVP and table tracking](./screenshots/11-guests.png)
+// Returns object with:
+{
+  // State
+  state: {
+    users: User[],
+    vendors: Vendor[],
+    admins: Admin[],
+    cart: CartItem[],
+    orders: Order[],
+    memberships: Membership[],
+    requests: Request[],
+    session: Session | null
+  },
 
-### Vendor Dashboard
-![Vendor Home - Dashboard with stats and quick actions](./screenshots/12-vendor-home.png)
+  // Methods
+  login(role, email, password): boolean,
+  logout(): void,
+  signupUser(name, email, password): boolean,
+  signupVendor(name, email, password, category): boolean,
+  
+  // Cart
+  addToCart(product, vendorId): void,
+  removeFromCart(productId): void,
+  updateQty(productId, qty): void,
+  clearCart(): void,
+  
+  // Orders
+  placeOrder(details): orderId,
+  updateOrderStatus(orderId, status): void,
+  
+  // Products
+  addProduct(vendorId, product): void,
+  deleteProduct(vendorId, productId): void,
+  updateProduct(vendorId, product): void,
+  
+  // Admin
+  addMembership(membership): void,
+  addRequest(request): void,
+  deleteUser(id): void,
+  deleteVendor(id): void,
+  getVendor(id): Vendor | undefined,
+  getSession(): Session | null
+}
+```
 
-### Product Management
-![Vendor Products - Manage inventory with edit/delete options](./screenshots/13-vendor-items.png)
+## Data Models
 
-### Add Product
-![Add Product - Form to list new products with emoji icons](./screenshots/14-add-item.png)
+### User Model
+```javascript
+{
+  id: number,
+  name: string,
+  email: string,
+  password: string,
+  role: "user"
+}
+```
 
-### Admin Dashboard
-![Admin Dashboard - Platform management options](./screenshots/15-admin-home.png)
+### Vendor Model
+```javascript
+{
+  id: number,
+  name: string,
+  email: string,
+  password: string,
+  role: "vendor",
+  category: "Catering" | "Florist" | "Decoration" | "Lighting",
+  contact: string,
+  desc: string,
+  products: Product[]
+}
+```
 
-### User Management
-![User Management - List all users and delete accounts](./screenshots/16-admin-users.png)
+### Product Model
+```javascript
+{
+  id: number,
+  name: string,
+  price: number,
+  emoji: string
+}
+```
 
-### Vendor Management
-![Vendor Management - Manage vendor accounts](./screenshots/17-admin-vendors.png)
+### CartItem Model
+```javascript
+{
+  productId: number,
+  vendorId: number,
+  name: string,
+  price: number,
+  emoji: string,
+  qty: number
+}
+```
 
-### Membership Management
-![Membership Plans - Add and update vendor membership plans](./screenshots/18-memberships.png)
+### Order Model
+```javascript
+{
+  id: string, // "ORD-{timestamp}"
+  userId: number,
+  name: string,
+  email: string,
+  number: string,
+  address: string,
+  city: string,
+  state: string,
+  pinCode: string,
+  paymentMethod: "Cash" | "UPI",
+  items: CartItem[],
+  total: number,
+  status: "Received" | "Ready for Shipping" | "Out For Delivery",
+  createdAt: string
+}
+```
 
-### All Orders
-![All Orders - View platform-wide orders](./screenshots/19-all-orders.png)
+### Session Model
+```javascript
+{
+  role: "user" | "vendor" | "admin",
+  id: number,
+  name: string
+}
+```
 
+### Membership Model
+```javascript
+{
+  id: number,
+  no: string, // "MEM-{timestamp}"
+  vendorId: number,
+  plan: "6 months" | "1 year" | "2 years",
+  price: string
+}
+```
+
+### Request Model
+```javascript
+{
+  id: number,
+  userId: number,
+  item: string,
+  desc: string,
+  date: string
+}
+```
+
+## Routing
+
+The application uses client-side routing with page state management:
+
+```
+Pages and Routes:
+
+1. Public Routes:
+   - "home" - Homepage
+   - "adminLogin" - Admin login
+   - "vendorLogin" - Vendor login
+   - "vendorSignup" - Vendor registration
+   - "userLogin" - User login
+   - "userSignup" - User registration
+
+2. User Routes (requires session.role === "user"):
+   - "userPortal" - Dashboard
+   - "vendorBrowse" - Browse vendors
+   - "products" - View vendor products
+   - "cart" - Shopping cart
+   - "checkout" - Multi-step checkout
+   - "success" - Order confirmation
+   - "orderStatus" - Order tracking
+   - "guestList" - Guest list management
+   - "requestItem" - Request custom items
+
+3. Vendor Routes (requires session.role === "vendor"):
+   - "vendorHome" - Dashboard
+   - "yourItems" - Product listing
+   - "addItem" - Add new product
+   - "transactions" - Order history
+   - "productStatus" - Order management
+   - "requestItem" - View requests
+
+4. Admin Routes (requires session.role === "admin"):
+   - "adminDash" - Dashboard
+   - "maintainUser" - User management
+   - "maintainVendor" - Vendor management
+   - "membership" - Membership plans
+   - "allOrders" - View all orders
+```
+
+## Authentication Flow
+
+```
+1. User selects role (User/Vendor/Admin)
+2. User navigates to login or signup
+3. On login:
+   - Validate credentials against state
+   - If valid: set session with role, id, name
+   - Navigate to role-specific dashboard
+4. On signup:
+   - Check if email exists
+   - Create new user/vendor in state
+   - Set session
+   - Navigate to dashboard
+5. Logout:
+   - Clear session
+   - Clear cart
+   - Navigate to home
+```
+
+## Styling Architecture
+
+### Design System Variables
+```css
+:root {
+  --bg: #0a0f1e;              /* Primary background */
+  --surface: #111827;          /* Card backgrounds */
+  --surface2: #1a2235;         /* Secondary surface */
+  --border: #1f2d45;           /* Border color */
+  --accent: #e8b86d;           /* Gold accent */
+  --accent2: #5b8dee;          /* Blue accent */
+  --accent3: #4fd1a5;          /* Green accent */
+  --danger: #f87171;           /* Error/danger color */
+  --text: #e8edf5;             /* Primary text */
+  --muted: #6b7a99;            /* Secondary text */
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 14px;              /* Border radius */
+  --shadow: 0 8px 32px rgba(0,0,0,.5);
+  --transition: .22s cubic-bezier(.4,0,.2,1);
+}
+```
 ## Directory Guide
 
 ### src/EventManagementSystem.jsx
